@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Herblore Supply Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0c0a05;
+      --bg-card: rgba(32, 23, 7, 0.97);
+      --bg-hover: rgba(50, 37, 10, 0.98);
+      --bg-detail: rgba(18, 13, 4, 0.99);
+      --border: rgba(150, 105, 25, 0.28);
+      --border-bright: rgba(210, 155, 50, 0.6);
+      --gold: #c8941e;
+      --gold-light: #e8b84a;
+      --gold-dim: #6a4e0e;
+      --green: #4db870;
+      --green-dim: #274d32;
+      --amber: #d4830a;
+      --red: #c04838;
+      --red-dim: #4d1e18;
+      --text: #cda96e;
+      --text-dim: #7a5c30;
+      --text-bright: #eed898;
+      --radius: 5px;
+    }
+
+    html, body {
+      background: var(--bg);
+      font-family: 'Crimson Text', Georgia, serif;
+      color: var(--text);
+      font-size: 14px;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    #app {
+      max-width: 380px;
+      margin: 0 auto;
+      background: var(--bg);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ─────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px 8px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(200,148,30,0.06) 0%, transparent 55%);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 8px; }
+
+    .flask { font-size: 18px; filter: drop-shadow(0 0 5px rgba(200,148,30,0.45)); }
+
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold-light);
+      letter-spacing: 0.4px;
+      text-shadow: 0 0 8px rgba(200,148,30,0.35);
+    }
+
+    .header-sub {
+      font-size: 9.5px;
+      color: var(--text-dim);
+      font-family: 'Cinzel', serif;
+      letter-spacing: 0.8px;
+    }
+
+    /* ── TAB BAR ─────────────────────────────── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,6,2,0.6);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 7px 4px;
+      font-family: 'Cinzel', serif;
+      font-size: 8.5px;
+      letter-spacing: 1.2px;
+      color: var(--text-dim);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.15s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+
+    /* ── VIEWS ───────────────────────────────── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── DASHBOARD ───────────────────────────── */
+    .tier-group { border-bottom: 1px solid var(--border); }
+
+    .tier-header {
+      padding: 5px 12px 4px;
+      font-family: 'Cinzel', serif;
+      font-size: 8px;
+      letter-spacing: 2.5px;
+      color: var(--gold-dim);
+      background: rgba(0,0,0,0.25);
+      font-weight: 600;
+    }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+    }
+
+    /* Single-col for complex potions with long names */
+    .dash-grid.wide {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .dash-card {
+      background: var(--bg-card);
+      padding: 8px 9px 7px;
+      cursor: pointer;
+      transition: background 0.12s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dash-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: transparent;
+      transition: background 0.15s;
+    }
+
+    .dash-card:hover { background: var(--bg-hover); }
+    .dash-card:hover::after { background: var(--gold-dim); }
+
+    .dash-card.can-make::after { background: var(--green-dim); }
+    .dash-card.can-make { background: rgba(28, 50, 30, 0.55); }
+    .dash-card.can-make:hover { background: rgba(35, 60, 37, 0.65); }
+
+    .dc-name {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-bright);
+      line-height: 1.25;
+      letter-spacing: 0.1px;
+    }
+
+    .dc-count {
+      font-family: 'Cinzel', serif;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-dim);
+      transition: color 0.15s, text-shadow 0.15s;
+    }
+
+    .dash-card.can-make .dc-count {
+      color: var(--green);
+      text-shadow: 0 0 10px rgba(77,184,112,0.3);
+    }
+
+    .dc-zero { color: var(--red-dim) !important; }
+
+    .dc-edit-hint {
+      font-size: 8.5px;
+      color: var(--text-dim);
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .dash-card:hover .dc-edit-hint { opacity: 1; }
+
+    /* ── DETAIL PANEL (slide-in) ─────────────── */
+    #detailOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 20;
+      backdrop-filter: blur(2px);
+    }
+
+    #detailOverlay.open { display: block; }
+
+    #detailPanel {
+      position: fixed;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%;
+      max-width: 380px;
+      background: var(--bg-detail);
+      border-top: 1px solid var(--border-bright);
+      border-radius: 10px 10px 0 0;
+      z-index: 21;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.8);
+      transition: transform 0.22s ease;
+    }
+
+    .detail-handle {
+      display: flex;
+      justify-content: center;
+      padding: 10px 0 4px;
+    }
+
+    .handle-bar {
+      width: 36px; height: 3px;
+      background: var(--border-bright);
+      border-radius: 99px;
+    }
+
+    .detail-header {
+      padding: 4px 14px 10px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-title {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold-light);
+      text-shadow: 0 0 8px rgba(200,148,30,0.3);
+    }
+
+    .detail-tier {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .detail-result {
+      font-family: 'Cinzel', serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--gold-light);
+      text-shadow: 0 0 15px rgba(200,148,30,0.4);
+      line-height: 1;
+      text-align: right;
+    }
+
+    .detail-result.zero { color: var(--red); text-shadow: 0 0 12px rgba(192,72,56,0.4); }
+    .detail-result-label { font-size: 8px; font-family: 'Cinzel', serif; letter-spacing: 1.5px; color: var(--text-dim); text-align: right; margin-top: 2px; }
+
+    .close-btn {
+      position: absolute;
+      top: 10px; right: 12px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 14px;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .close-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+
+    .ingredients-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    .ingredient-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      background: rgba(28,20,6,0.9);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 8px;
+      transition: border-color 0.15s;
+    }
+
+    .ingredient-row.limiting { border-color: var(--red); background: rgba(192,72,56,0.1); }
+    .ingredient-row.ok { border-color: var(--green-dim); }
+
+    .ing-name { font-size: 12.5px; color: var(--text-bright); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ing-type { font-size: 10px; color: var(--text-dim); font-style: italic; }
+    .ing-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .ing-qty-label { font-size: 9px; color: var(--text-dim); font-family: 'Cinzel', serif; letter-spacing: 1px; }
+    .ing-left { overflow: hidden; }
+    .ing-available-label { font-size: 9px; color: var(--green-dim); font-family: 'Cinzel', serif; letter-spacing: 1px; margin-top: 4px; }
+    .ing-effective { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: var(--text-dim); text-align: right; }
+    .ing-effective.crafted { color: var(--green); text-shadow: 0 0 6px rgba(77,184,112,0.3); }
+    .ing-direct-hint { font-size: 9px; color: var(--text-dim); font-style: italic; text-align: right; }
+    .n-crafted { color: var(--green) !important; }
+
+    .ing-input {
+      width: 68px;
+      background: rgba(8,6,2,0.9);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--gold-light);
+      font-family: 'Crimson Text', serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 3px 6px;
+      text-align: right;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .ing-input:focus { border-color: var(--gold); box-shadow: 0 0 5px rgba(200,148,30,0.2); }
+
+    .limiting-msg {
+      padding: 0 12px 6px;
+      font-size: 11px;
+      color: var(--red);
+      font-style: italic;
+      min-height: 18px;
+    }
+
+    /* Batch section inside detail */
+    .batch-section {
+      margin: 0 12px 12px;
+      background: rgba(20,14,4,0.8);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+    }
+
+    .batch-label-row {
+      font-family: 'Cinzel', serif;
+      font-size: 8.5px;
+      letter-spacing: 1.5px;
+      color: var(--gold-dim);
+      margin-bottom: 6px;
+    }
+
+    .batch-target-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .batch-target-row span { font-size: 12px; color: var(--text-dim); flex: 1; }
+
+    .batch-input {
+      width: 72px;
+      background: rgba(8,6,2,0.9);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--gold-light);
+      font-family: 'Crimson Text', serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 3px 8px;
+      text-align: right;
+      outline: none;
+    }
+
+    .batch-input:focus { border-color: var(--gold); }
+
+    .needed-list { display: flex; flex-direction: column; gap: 3px; }
+
+    .needed-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(150,105,25,0.12);
+    }
+
+    .needed-row:last-child { border-bottom: none; }
+    .n-name { font-size: 11.5px; color: var(--text); }
+    .n-vals { display: flex; align-items: center; gap: 5px; font-family: 'Cinzel', serif; font-size: 9.5px; }
+    .n-have { color: var(--text-dim); }
+    .n-need { color: var(--gold-light); font-weight: 600; }
+    .n-short { color: var(--red); }
+    .n-surplus { color: var(--green); }
+
+    /* ── SUPPLIES VIEW ───────────────────────── */
+    #viewSupplies { padding: 10px 12px; }
+
+    .supply-search {
+      width: 100%;
+      background: rgba(20,14,4,0.9);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-bright);
+      font-family: 'Crimson Text', serif;
+      font-size: 13px;
+      padding: 6px 10px;
+      outline: none;
+      margin-bottom: 10px;
+    }
+
+    .supply-search:focus { border-color: var(--gold); }
+    .supply-search::placeholder { color: var(--text-dim); }
+
+    .supply-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 4px;
+    }
+
+    .supply-name { font-size: 12.5px; color: var(--text-bright); font-weight: 600; }
+    .supply-type { font-size: 10px; color: var(--text-dim); font-style: italic; }
+
+    .supply-input {
+      width: 72px;
+      background: rgba(8,6,2,0.9);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--gold-light);
+      font-family: 'Crimson Text', serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 3px 7px;
+      text-align: right;
+      outline: none;
+    }
+
+    .supply-input:focus { border-color: var(--gold); }
+
+    /* ── FILTER BAR ─────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 4px;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,4,1,0.7);
+      overflow-x: auto;
+    }
+
+    .filter-bar::-webkit-scrollbar { display: none; }
+
+    .filter-btn {
+      flex-shrink: 0;
+      padding: 4px 10px;
+      font-family: 'Cinzel', serif;
+      font-size: 8.5px;
+      letter-spacing: 1px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .filter-btn:hover { color: var(--text); border-color: var(--border-bright); }
+
+    .filter-btn.active {
+      background: rgba(200,148,30,0.15);
+      border-color: var(--gold);
+      color: var(--gold-light);
+    }
+
+    .filter-btn.f-overload.active    { background: rgba(76,175,114,0.15); border-color: var(--green); color: var(--green); }
+    .filter-btn.f-supreme.active     { background: rgba(180,100,220,0.15); border-color: #b464dc; color: #c87ef0; }
+    .filter-btn.f-elder.active       { background: rgba(200,148,30,0.2);  border-color: var(--gold-light); color: var(--gold-light); }
+    .filter-btn.f-support.active     { background: rgba(80,140,200,0.15); border-color: #5090d0; color: #78b0e8; }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="header-left">
+      <div class="flask">⚗</div>
+      <div>
+        <h1>Herblore Tracker</h1>
+        <div class="header-sub">Supply &amp; Potion Calculator</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="dashboard">OVERVIEW</button>
+    <button class="tab" data-tab="supplies">SUPPLIES</button>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-filter="all">ALL</button>
+    <button class="filter-btn f-overload" data-filter="overload">OVERLOAD</button>
+    <button class="filter-btn f-supreme" data-filter="supreme">SUPREME</button>
+    <button class="filter-btn f-elder" data-filter="elder">ELDER</button>
+    <button class="filter-btn f-support" data-filter="support">SUPPORT</button>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div class="view active" id="viewDashboard"></div>
+
+  <!-- SUPPLIES VIEW -->
+  <div class="view" id="viewSupplies">
+    <input class="supply-search" id="supplySearch" type="text" placeholder="Search ingredients..." />
+    <div id="supplyList"></div>
+  </div>
+
+</div>
+
+<!-- DETAIL OVERLAY -->
+<div id="detailOverlay">
+  <div id="detailPanel">
+    <div class="detail-handle"><div class="handle-bar"></div></div>
+    <button class="close-btn" id="closeDetail">✕</button>
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" id="detailTitle"></div>
+        <div class="detail-tier" id="detailTier"></div>
+      </div>
+      <div>
+        <div class="detail-result" id="detailResult">0</div>
+        <div class="detail-result-label">CAN MAKE</div>
+      </div>
+    </div>
+    <div class="limiting-msg" id="limitingMsg"></div>
+    <div class="ingredients-list" id="detailIngredients"></div>
+    <div class="batch-section">
+      <div class="batch-label-row">BATCH CALCULATOR</div>
+      <div class="batch-target-row">
+        <span>Target potions:</span>
+        <input type="number" class="batch-input" id="batchTarget" min="1" value="100" />
+      </div>
+      <div class="needed-list" id="neededList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (typeof alt1 !== 'undefined') alt1.identifyAppUrl("appconfig.json");
+
+// ── POTION DATA ──────────────────────────────────────────────
+// "craftsInto" links a potion id to the ingredient name it becomes when used
+// in a higher-tier recipe. dose variants are resolved automatically.
+const POTIONS = [
+  // ── Standard ──────────────────────────────────────────────
+  { id:"super_attack",       name:"Super Attack",           tier:"Standard", craftsInto:["Super attack"],          ingredients:[{name:"Irit leaf",type:"herb"},{name:"Eye of newt",type:"secondary"}] },
+  { id:"super_strength",     name:"Super Strength",         tier:"Standard", craftsInto:["Super strength"],        ingredients:[{name:"Kwuarm",type:"herb"},{name:"Limpwurt root",type:"secondary"}] },
+  { id:"super_defence",      name:"Super Defence",          tier:"Standard", craftsInto:["Super defence"],         ingredients:[{name:"Cadantine",type:"herb"},{name:"White berries",type:"secondary"}] },
+  { id:"super_restore",      name:"Super Restore",          tier:"Standard", craftsInto:["Super restore"],         ingredients:[{name:"Snapdragon",type:"herb"},{name:"Red spiders' eggs",type:"secondary"}] },
+  { id:"prayer_potion",      name:"Prayer Potion",          tier:"Standard", craftsInto:["Prayer potion"],         ingredients:[{name:"Ranarr weed",type:"herb"},{name:"Snape grass",type:"secondary"}] },
+  { id:"antifire",           name:"Antifire",               tier:"Standard", craftsInto:["Antifire potion","Antifire"],ingredients:[{name:"Lantadyme",type:"herb"},{name:"Dragon scale dust",type:"secondary"}] },
+  { id:"ranging_potion",     name:"Ranging Potion",         tier:"Standard", craftsInto:["Ranging potion","Super ranging"],ingredients:[{name:"Dwarf weed",type:"herb"},{name:"Wine of Zamorak",type:"secondary"}] },
+  { id:"magic_potion",       name:"Magic Potion",           tier:"Standard", craftsInto:["Magic potion","Super magic potion","Super magic"],ingredients:[{name:"Lantadyme",type:"herb"},{name:"Potato cactus",type:"secondary"}] },
+  { id:"saradomin_brew",     name:"Sara Brew",              tier:"Standard", craftsInto:[],                        ingredients:[{name:"Toadflax",type:"herb"},{name:"Crushed bird nest",type:"secondary"}] },
+  { id:"prayer_renewal",     name:"Prayer Renewal",         tier:"Standard", craftsInto:["Prayer renewal"],        ingredients:[{name:"Fellstalk weed",type:"herb"},{name:"Morchella mushroom",type:"secondary"}] },
+  { id:"super_antifire",     name:"Super Antifire",         tier:"Standard", craftsInto:["Super antifire"],        ingredients:[{name:"Antifire potion (3)",type:"secondary"},{name:"Desert Phoenix feather",type:"secondary"}] },
+  { id:"aggression",         name:"Aggression",             tier:"Standard", craftsInto:[],                        ingredients:[{name:"Clean sunchoke",type:"herb"},{name:"Bloodweed potion (unf)",type:"secondary"}] },
+  { id:"super_necromancy",   name:"Super Necromancy",       tier:"Standard", craftsInto:["Super necromancy potion","Super necromancy"],ingredients:[{name:"Spirit weed",type:"herb"},{name:"Congealed blood",type:"secondary",qty:5}] },
+  { id:"super_prayer",       name:"Super Prayer",           tier:"Standard", craftsInto:["Super prayer"],          ingredients:[{name:"Prayer restore potion",type:"secondary"},{name:"Wyvern bonemeal",type:"secondary"}] },
+  { id:"super_antipoison",   name:"Super Antipoison",       tier:"Standard", craftsInto:["Super antipoison"],      ingredients:[{name:"Irit leaf",type:"herb"},{name:"Unicorn horn dust",type:"secondary"}] },
+  // ── Extreme ───────────────────────────────────────────────
+  { id:"ext_attack",         name:"Ext. Attack",            tier:"Extreme",  craftsInto:["Extreme attack"],        ingredients:[{name:"Avantoe",type:"herb"},{name:"Super attack (3)",type:"secondary"}] },
+  { id:"ext_strength",       name:"Ext. Strength",          tier:"Extreme",  craftsInto:["Extreme strength"],      ingredients:[{name:"Dwarf weed",type:"herb"},{name:"Super strength (3)",type:"secondary"}] },
+  { id:"ext_defence",        name:"Ext. Defence",           tier:"Extreme",  craftsInto:["Extreme defence"],       ingredients:[{name:"Lantadyme",type:"herb"},{name:"Super defence (3)",type:"secondary"}] },
+  { id:"ext_ranging",        name:"Ext. Ranging",           tier:"Extreme",  craftsInto:["Extreme ranging"],       ingredients:[{name:"Grenwall spikes",type:"secondary"},{name:"Ranging potion (3)",type:"secondary"}] },
+  { id:"ext_magic",          name:"Ext. Magic",             tier:"Extreme",  craftsInto:["Extreme magic"],         ingredients:[{name:"Ground mud runes",type:"secondary"},{name:"Magic potion (3)",type:"secondary"}] },
+  { id:"ext_necromancy",     name:"Ext. Necromancy",        tier:"Extreme",  craftsInto:["Extreme necromancy"],    ingredients:[{name:"Super necromancy potion (3)",type:"secondary"},{name:"Ground miasma rune",type:"secondary"}] },
+  // ── Overload ──────────────────────────────────────────────
+  { id:"overload",           name:"Overload",               tier:"Overload", craftsInto:["Overload","Overload potion"],ingredients:[{name:"Torstol",type:"herb"},{name:"Extreme attack (4)",type:"secondary"},{name:"Extreme strength (4)",type:"secondary"},{name:"Extreme defence (4)",type:"secondary"},{name:"Extreme magic (4)",type:"secondary"},{name:"Extreme ranging (4)",type:"secondary"},{name:"Extreme necromancy (4)",type:"secondary"}] },
+  // ── Elder ─────────────────────────────────────────────────
+  { id:"elder_overload",     name:"Elder Overload",         tier:"Elder",    craftsInto:["Elder overload"],        ingredients:[{name:"Supreme overload potion (4)",type:"base"},{name:"Crystal flask",type:"secondary"},{name:"Primal extract",type:"secondary"},{name:"Clean fellstalk",type:"herb"}] },
+  { id:"holy_overload",      name:"Holy Overload",          tier:"Elder",    craftsInto:["Holy overload"],         ingredients:[{name:"Prayer renewal (4)",type:"secondary"},{name:"Overload potion (4)",type:"secondary"}] },
+  { id:"eos",                name:"Elder Ovl. Salve",       tier:"Elder",    craftsInto:[],                        ingredients:[{name:"Elder overload (6)",type:"base"},{name:"Prayer renewal (6)",type:"secondary"},{name:"Weapon poison+++ (6)",type:"secondary"},{name:"Summoning potion (6)",type:"secondary"},{name:"Super antifire (6)",type:"secondary"},{name:"Extreme attack (6)",type:"secondary"},{name:"Extreme strength (6)",type:"secondary"},{name:"Extreme defence (6)",type:"secondary"},{name:"Extreme ranging (6)",type:"secondary"},{name:"Extreme magic (6)",type:"secondary"}] },
+  // ── Supreme ───────────────────────────────────────────────
+  { id:"supreme_overload",   name:"Supreme Overload",       tier:"Supreme",  craftsInto:["Supreme overload potion","Supreme overload"],ingredients:[{name:"Overload (4)",type:"base"},{name:"Super attack (4)",type:"secondary"},{name:"Super strength (4)",type:"secondary"},{name:"Super defence (4)",type:"secondary"},{name:"Super magic (4)",type:"secondary"},{name:"Super ranging (4)",type:"secondary"},{name:"Super necromancy (4)",type:"secondary"}] },
+  { id:"supreme_ovl_salve",  name:"Supreme Ovl. Salve",     tier:"Supreme",  craftsInto:[],                        ingredients:[{name:"Supreme overload potion (6)",type:"base"},{name:"Super antifire (6)",type:"secondary"},{name:"Antifire (6)",type:"secondary"},{name:"Prayer renewal (6)",type:"secondary"},{name:"Prayer potion (6)",type:"secondary"},{name:"Super antipoison (6)",type:"secondary"}] },
+  { id:"super_prayer_renewal",name:"Super Prayer Renewal",  tier:"Supreme",  craftsInto:[],                        ingredients:[{name:"Prayer renewal (4)",type:"secondary"},{name:"Prayer potion (4)",type:"secondary"}] },
+  // ── Weapon ────────────────────────────────────────────────
+  { id:"weapon_ppp",         name:"Weapon Poison+++",       tier:"Weapon",   craftsInto:["Weapon poison+++"],      ingredients:[{name:"Cave nightshade",type:"herb"},{name:"Poison ivy berries",type:"secondary"},{name:"Cactus spine",type:"secondary"}] },
+  { id:"vulnerability_bomb", name:"Vulnerability Bomb",     tier:"Weapon",   craftsInto:[],                        ingredients:[{name:"Bomb vial",type:"secondary"},{name:"Primal extract",type:"secondary"},{name:"Soul rune",type:"secondary",qty:5},{name:"Chaos rune",type:"secondary",qty:5},{name:"Bottled dinosaur roar",type:"secondary",qty:2},{name:"Clean dwarf weed",type:"herb"}] },
+];
+
+
+const TIER_ORDER = ["Standard","Extreme","Overload","Elder","Supreme","Weapon"];
+
+// ── FILTER GROUPS ────────────────────────────────────────────
+// Maps potion id → filter group
+const FILTER_GROUP = {
+  // Overload chain — all base potions needed to make an Overload
+  super_attack:      "overload",
+  super_strength:    "overload",
+  super_defence:     "overload",
+  ranging_potion:    "overload",
+  magic_potion:      "overload",
+  ext_attack:        "overload",
+  ext_strength:      "overload",
+  ext_defence:       "overload",
+  ext_ranging:       "overload",
+  ext_magic:         "overload",
+  overload:          "overload",
+  // Supreme chain — everything needed on top of Overload
+  super_necromancy:  "overload",
+  ext_necromancy:    "overload",
+  supreme_overload:  "supreme",
+  supreme_ovl_salve: "supreme",
+  // Elder chain
+  elder_overload:    "elder",
+  holy_overload:     "elder",
+  eos:               "elder",
+  // everything else is support
+};
+
+function getPotionFilter(potion) {
+  return FILTER_GROUP[potion.id] || "support";
+}
+
+let activeFilter = "all";
+
+// ── STATE ────────────────────────────────────────────────────
+let supplies = {};   // { ingredientName: number }  — raw items in bank
+let activePotion = null;
+
+// ── CHAINED RECIPE RESOLUTION ────────────────────────────────
+// Build a lookup: canonical base name (lowercase, no dose suffix) → potion
+// e.g. "super attack" → super_attack potion entry
+function buildCraftMap() {
+  const map = new Map(); // lc-base-name → potion
+  POTIONS.forEach(p => {
+    p.craftsInto.forEach(alias => {
+      map.set(alias.toLowerCase(), p);
+    });
+  });
+  return map;
+}
+const CRAFT_MAP = buildCraftMap();
+
+// Strip dose suffix: "Super attack (3)" → "super attack"
+function baseName(name) {
+  return name.replace(/\s*\(\d+\)\s*$/, '').toLowerCase().trim();
+}
+
+// How many of `ingredientName` are effectively available?
+// = directly stocked in bank  OR  craftable from sub-recipes (whichever is higher)
+// `seen` prevents infinite recursion for circular references
+function resolveAvailable(ingredientName, seen = new Set()) {
+  const direct = supplies[ingredientName] ?? 0;
+  const base = baseName(ingredientName);
+  if (seen.has(base)) return direct; // cycle guard
+  const sourcePotion = CRAFT_MAP.get(base);
+  if (!sourcePotion) return direct;
+  seen.add(base);
+  const craftable = canMakeChained(sourcePotion, seen);
+  return direct + craftable;
+}
+
+// How many of `potion` can be made, resolving each ingredient recursively
+function canMakeChained(potion, seen = new Set()) {
+  if (!potion.ingredients.length) return 0;
+  return Math.min(...potion.ingredients.map(i => resolveAvailable(i.name, new Set(seen))));
+}
+
+// Public: how many of a potion can be made (full chain)
+function canMake(potion) {
+  return canMakeChained(potion);
+}
+
+// For the detail panel: per-ingredient effective availability
+function resolvedAvailability(potion) {
+  return potion.ingredients.map(i => ({
+    name: i.name,
+    type: i.type,
+    direct: supplies[i.name] ?? 0,
+    effective: resolveAvailable(i.name),
+    sourcePotion: CRAFT_MAP.get(baseName(i.name)) || null,
+  }));
+}
+
+function allIngredients() {
+  const seen = new Set();
+  const list = [];
+  POTIONS.forEach(p => p.ingredients.forEach(i => {
+    if (!seen.has(i.name)) { seen.add(i.name); list.push(i); }
+  }));
+  return list.sort((a,b) => a.name.localeCompare(b.name));
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+function renderDashboard() {
+  const view = document.getElementById("viewDashboard");
+  view.innerHTML = "";
+
+  const filtered = POTIONS.filter(p =>
+    activeFilter === "all" || getPotionFilter(p) === activeFilter
+  );
+
+  const tiers = {};
+  filtered.forEach(p => {
+    if (!tiers[p.tier]) tiers[p.tier] = [];
+    tiers[p.tier].push(p);
+  });
+
+  TIER_ORDER.forEach(tier => {
+    if (!tiers[tier]) return;
+    const group = document.createElement("div");
+    group.className = "tier-group";
+
+    const header = document.createElement("div");
+    header.className = "tier-header";
+    header.textContent = tier.toUpperCase();
+    group.appendChild(header);
+
+    const grid = document.createElement("div");
+    const wide = tiers[tier].some(p => p.name.length > 12);
+    grid.className = "dash-grid" + (wide ? " wide" : "");
+
+    tiers[tier].forEach(potion => {
+      const count = canMake(potion);
+      const card = document.createElement("div");
+      card.className = "dash-card" + (count > 0 ? " can-make" : "");
+      card.innerHTML = `
+        <div class="dc-name">${potion.name}</div>
+        <div class="dc-count ${count === 0 ? 'dc-zero' : ''}">${count}</div>
+        <div class="dc-edit-hint">edit supplies</div>
+      `;
+      card.addEventListener("click", () => openDetail(potion));
+      grid.appendChild(card);
+    });
+
+    group.appendChild(grid);
+    view.appendChild(group);
+  });
+}
+
+// ── DETAIL PANEL ─────────────────────────────────────────────
+function openDetail(potion) {
+  activePotion = potion;
+  // ensure supply entries exist
+  potion.ingredients.forEach(i => {
+    if (supplies[i.name] === undefined) supplies[i.name] = 0;
+  });
+
+  document.getElementById("detailTitle").textContent = potion.name;
+  document.getElementById("detailTier").textContent = potion.tier;
+  document.getElementById("detailOverlay").classList.add("open");
+  renderDetailIngredients();
+  updateDetailResult();
+}
+
+function closeDetail() {
+  document.getElementById("detailOverlay").classList.remove("open");
+  activePotion = null;
+}
+
+function renderDetailIngredients() {
+  if (!activePotion) return;
+  const list = document.getElementById("detailIngredients");
+  list.innerHTML = "";
+  const typeLabels = { herb:"Herb", secondary:"Secondary", tertiary:"Tertiary", base:"Base potion" };
+  const resolved = resolvedAvailability(activePotion);
+
+  resolved.forEach(r => {
+    const { name: ingName, type, direct, effective, sourcePotion } = r;
+    const isCrafted = sourcePotion !== null;
+    const craftedExtra = isCrafted && effective > direct;
+    const subLabel = (typeLabels[type] || type) + (isCrafted ? " · from " + sourcePotion.name : "");
+
+    const row = document.createElement("div");
+    row.className = "ingredient-row";
+    row.dataset.ing = ingName;
+
+    const availHtml = isCrafted
+      ? `<div class="ing-available-label">AVAIL</div>
+         <div class="ing-effective${craftedExtra ? " crafted" : ""}">${effective}${craftedExtra ? ` <span class="ing-direct-hint">(${direct} stocked)</span>` : ""}</div>`
+      : "";
+
+    row.innerHTML = `
+      <div class="ing-left">
+        <div class="ing-name">${ingName}</div>
+        <div class="ing-type">${subLabel}</div>
+      </div>
+      <div class="ing-right">
+        <div class="ing-qty-label">BANK</div>
+        <input type="number" class="ing-input" min="0" value="${direct}" />
+        ${availHtml}
+      </div>`;
+
+    row.querySelector(".ing-input").addEventListener("input", e => {
+      supplies[ingName] = parseInt(e.target.value) || 0;
+      updateDetailResult();
+      renderDashboard();
+      renderSupplyList();
+      saveToStorage();
+    });
+    list.appendChild(row);
+  });
+}
+
+function updateDetailResult() {
+  if (!activePotion) return;
+  const resolved = resolvedAvailability(activePotion);
+
+  // Update AVAIL values in-place without re-rendering (keeps focus)
+  resolved.forEach(r => {
+    const row = document.querySelector('#detailIngredients .ingredient-row[data-ing="' + r.name + '"]');
+    if (!row) return;
+    const effEl = row.querySelector('.ing-effective');
+    if (effEl) {
+      effEl.className = 'ing-effective' + (r.effective > r.direct ? ' crafted' : '');
+      const hint = r.effective > r.direct ? ' <span class="ing-direct-hint">(' + r.direct + ' stocked)</span>' : '';
+      effEl.innerHTML = r.effective + hint;
+    }
+  });
+  const effectives = resolved.map(r => r.effective);
+  const count = effectives.length ? Math.min(...effectives) : 0;
+  const maxEff = Math.max(...effectives, 1);
+
+  const el = document.getElementById("detailResult");
+  el.textContent = count;
+  el.className = "detail-result" + (count === 0 ? " zero" : "");
+
+  const limiting = resolved.filter(r => r.effective === count && count < maxEff);
+  const msg = document.getElementById("limitingMsg");
+  msg.textContent = limiting.length
+    ? (count === 0 ? "Missing: " : "Limited by: ") + limiting.map(r => r.name).join(", ")
+    : "";
+
+  // Highlight ingredient rows based on effective availability
+  document.querySelectorAll("#detailIngredients .ingredient-row").forEach(row => {
+    const ingName = row.dataset.ing;
+    const eff = resolveAvailable(ingName);
+    row.classList.remove("limiting", "ok");
+    if (eff === count && count < maxEff) row.classList.add("limiting");
+    else if (eff > 0) row.classList.add("ok");
+  });
+
+  updateBatch();
+}
+
+// ── BATCH ────────────────────────────────────────────────────
+function updateBatch() {
+  if (!activePotion) return;
+  const target = parseInt(document.getElementById("batchTarget").value) || 0;
+  const container = document.getElementById("neededList");
+  container.innerHTML = "";
+  const resolved = resolvedAvailability(activePotion);
+
+  resolved.forEach(r => {
+    const isCrafted = r.sourcePotion !== null && r.effective > r.direct;
+    const diff = r.effective - target;
+    const row = document.createElement("div");
+    row.className = "needed-row";
+    const diffHtml = diff < 0
+      ? `<span class="n-short">▼ ${Math.abs(diff)} short</span>`
+      : `<span class="n-surplus">✔ +${diff}</span>`;
+    const haveLabel = isCrafted
+      ? `<span class="n-have n-crafted" title="${r.direct} in bank + craftable">${r.effective}*</span>`
+      : `<span class="n-have">${r.effective}</span>`;
+    row.innerHTML = `
+      <span class="n-name">${r.name}</span>
+      <span class="n-vals">
+        ${haveLabel}<span style="color:var(--text-dim)">/</span><span class="n-need">${target}</span>
+        ${diffHtml}
+      </span>`;
+    container.appendChild(row);
+  });
+}
+
+// ── SUPPLIES VIEW ─────────────────────────────────────────────
+function renderSupplyList(filter = "") {
+  const list = document.getElementById("supplyList");
+  list.innerHTML = "";
+  const ings = allIngredients().filter(i => !filter || i.name.toLowerCase().includes(filter.toLowerCase()));
+  const typeLabels = { herb:"Herb", secondary:"Secondary", tertiary:"Tertiary", base:"Base potion" };
+
+  ings.forEach(ing => {
+    const row = document.createElement("div");
+    row.className = "supply-row";
+    row.innerHTML = `
+      <div>
+        <div class="supply-name">${ing.name}</div>
+        <div class="supply-type">${typeLabels[ing.type] || ing.type}</div>
+      </div>
+      <input type="number" class="supply-input" min="0" value="${supplies[ing.name] ?? 0}" />`;
+    row.querySelector(".supply-input").addEventListener("input", e => {
+      supplies[ing.name] = parseInt(e.target.value) || 0;
+      renderDashboard();
+      if (activePotion) updateDetailResult();
+      saveToStorage();
+    });
+    list.appendChild(row);
+  });
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+// ── FILTER BAR EVENTS ───────────────────────────────────────
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter = btn.dataset.filter;
+    renderDashboard();
+  });
+});
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view" + capitalise(btn.dataset.tab)).classList.add("active");
+    document.getElementById("filterBar").style.display = btn.dataset.tab === "dashboard" ? "" : "none";
+    if (btn.dataset.tab === "supplies") renderSupplyList();
+  });
+});
+
+function capitalise(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ── EVENTS ───────────────────────────────────────────────────
+document.getElementById("closeDetail").addEventListener("click", closeDetail);
+document.getElementById("detailOverlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("detailOverlay")) closeDetail();
+});
+document.getElementById("batchTarget").addEventListener("input", updateBatch);
+document.getElementById("supplySearch").addEventListener("input", e => renderSupplyList(e.target.value));
+
+// ── STORAGE ──────────────────────────────────────────────────
+function saveToStorage() {
+  try { localStorage.setItem("herblore_tracker_v2", JSON.stringify(supplies)); } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem("herblore_tracker_v2");
+    if (raw) supplies = JSON.parse(raw);
+  } catch(e) {}
+}
+
+// ── BOOT ─────────────────────────────────────────────────────
+loadFromStorage();
+renderDashboard();
+</script>
+</body>
+</html>
